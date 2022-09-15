@@ -12,14 +12,15 @@
     let ballX = 75;
     let ballY = 75;
     let ballVX = 4;
-    let ballVY = 7;
+    let ballVY = 4;
 
     const BRICK_W = 80;
-    const BRICK_H = 40;
+    const BRICK_H = 20;
     const BRICK_GAP = 2;
     const BRICK_COLS = 10;
-    const BRICK_ROWS = 7;
+    const BRICK_ROWS = 14;
     let brickGrid = new Array(BRICK_COLS * BRICK_ROWS);
+    let bricksLeft = 0;
 
     const BALL_RADIUS = 10;
     const PADDLE_WIDTH = 100;
@@ -41,15 +42,22 @@
 
       paddleX = mouseX - PADDLE_WIDTH / 2;
 
-      ballX = mouseX;
-      ballY = mouseY;
-      ballVX = 4;
-      ballVY = -4;
+      // cheat for testing
+      // ballX = mouseX;
+      // ballY = mouseY;
+      // ballVX = 4;
+      // ballVY = -4;
     };
 
     let brickReset = () => {
-      for (let i = 0; i < BRICK_COLS * BRICK_ROWS; i++) {
+      bricksLeft = 0;
+      let i;
+      for (i = 0; i < 3 * BRICK_COLS; i++) {
+        brickGrid[i] = false;
+      }
+      for (; i < BRICK_COLS * BRICK_ROWS; i++) {
         brickGrid[i] = true;
+        bricksLeft++;
       } // end of for loop
     }; // end of brick reset func
 
@@ -63,6 +71,7 @@
       canvas.addEventListener("mousemove", updateMousePos);
 
       brickReset();
+      ballReset();
     };
 
     let updateAll = () => {
@@ -78,22 +87,31 @@
     let ballMove = () => {
       ballX += ballVX;
       ballY += ballVY;
-      if (ballX < 0) {
+      if (ballX < 0 && ballVX < 0.0) {
         //left
         ballVX = -ballVX;
       }
-      if (ballX > canvas.width) {
+      if (ballX > canvas.width && ballVX > 0.0) {
         //right
         ballVX = -ballVX;
       }
-      if (ballY < 0) {
+      if (ballY < 0 && ballVY < 0.0) {
         //top
         ballVY = -ballVY;
       }
       if (ballY > canvas.height) {
         //bottom
-        // ballVY = -ballVY;
         ballReset();
+        brickReset();
+      }
+    };
+
+    let isBrickAtColRow = (col, row) => {
+      if (col >= 0 && col < BRICK_COLS && row >= 0 && row < BRICK_ROWS) {
+        let brickIndexUnderCoord = rowColToArrayIndex(col, row);
+        return brickGrid[brickIndexUnderCoord];
+      } else {
+        return false;
       }
     };
 
@@ -108,8 +126,9 @@
         ballBrickRow >= 0 &&
         ballBrickRow < BRICK_ROWS
       ) {
-        if (brickGrid[brickIndexUnderball]) {
+        if (isBrickAtColRow(ballBrickCol, ballBrickRow)) {
           brickGrid[brickIndexUnderball] = false;
+          bricksLeft--;
 
           let prevBallX = ballX - ballVX;
           let prevBallY = ballY - ballVY;
@@ -117,17 +136,15 @@
           let prevBrickRow = Math.floor(prevBallY / BRICK_H);
 
           let bothTestsFailed = true;
-          if (prevBrickCol != ballBrickCol) {
-            let adjBrickSide = rowColToArrayIndex(prevBrickCol, ballBrickRow);
 
-            if (brickGrid[adjBrickSide] == false) {
+          if (prevBrickCol != ballBrickCol) {
+            if (isBrickAtColRow(prevBrickCol, ballBrickRow) == false) {
               ballVX *= -1;
               bothTestsFailed = false;
             }
           }
           if (prevBrickRow != ballBrickRow) {
-            let adjBrickTop = rowColToArrayIndex(ballBrickCol, prevBrickRow);
-            if (brickGrid[adjBrickTop] == false) {
+            if (isBrickAtColRow(ballBrickCol, prevBrickRow) == false) {
               ballVY *= -1;
               bothTestsFailed = false;
             }
@@ -135,7 +152,7 @@
 
           if (bothTestsFailed) {
             ballVX *= -1;
-            ballvY *= -1;
+            ballVY *= -1;
           }
         } //end of brick found
       } // end of valid col and row
@@ -157,6 +174,10 @@
         let paddleCenterX = paddleX + PADDLE_WIDTH / 2;
         let ballDistFromPaddleCenterX = ballX - paddleCenterX;
         ballVX = ballDistFromPaddleCenterX * 0.35;
+
+        if (bricksLeft == 0) {
+          brickReset();
+        }
       }
     };
 

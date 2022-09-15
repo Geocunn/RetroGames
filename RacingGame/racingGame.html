@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <meta content="utf-8" http-equiv="'encoding" />
+  </head>
+
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+  </body>
+  <script>
+    let ballX = 75;
+    let ballY = 75;
+    let ballVX = 5;
+    let ballVY = 7;
+
+    const TRACK_W = 40;
+    const TRACK_H = 40;
+    const TRACK_GAP = 2;
+    const TRACK_COLS = 20;
+    const TRACK_ROWS = 15;
+
+    //prettier-ignore
+    let trackGrid = [
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
+    1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1,
+    1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1,
+    1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+    1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+    1, 0, 2, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1,
+    1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1,
+    1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    ];
+
+    let canvas, canvasContext;
+
+    let mouseX = 0;
+    let mouseY = 0;
+
+    let updateMousePos = (evt) => {
+      let rect = canvas.getBoundingClientRect();
+      let root = document.documentElement;
+
+      mouseX = evt.clientX - rect.left - root.scrollLeft;
+      mouseY = evt.clientY - rect.top - root.scrollTop;
+    };
+
+    window.onload = () => {
+      canvas = document.getElementById("gameCanvas");
+      canvasContext = canvas.getContext("2d");
+
+      let fps = 30;
+      setInterval(updateAll, 1000 / fps);
+
+      canvas.addEventListener("mousemove", updateMousePos);
+
+      ballReset();
+    };
+
+    let updateAll = () => {
+      moveAll();
+      drawAll();
+    };
+
+    let ballReset = () => {
+      for (let row = 0; row < TRACK_ROWS; row++) {
+        for (let col = 0; col < TRACK_COLS; col++) {
+          let arrayIndex = rowColToArrayIndex(col, row);
+          if (trackGrid[arrayIndex] == 2) {
+            trackGrid[arrayIndex] == 0;
+            ballX = col * TRACK_W + TRACK_W / 2;
+            ballY = row * TRACK_H + TRACK_H / 2;
+          }
+        }
+      }
+    };
+
+    let ballMove = () => {
+      ballX += ballVX;
+      ballY += ballVY;
+      if (ballX < 0 && ballVX < 0.0) {
+        //left
+        ballVX = -ballVX;
+      }
+      if (ballX > canvas.width && ballVX > 0.0) {
+        //right
+        ballVX = -ballVX;
+      }
+      if (ballY < 0 && ballVY < 0.0) {
+        //top
+        ballVY = -ballVY;
+      }
+      if (ballY > canvas.height) {
+        //bottom
+        ballReset();
+        trackReset();
+      }
+    };
+
+    let isTrackAtColRow = (col, row) => {
+      if (col >= 0 && col < TRACK_COLS && row >= 0 && row < TRACK_ROWS) {
+        let trackIndexUnderCoord = rowColToArrayIndex(col, row);
+        return trackGrid[trackIndexUnderCoord] == 1;
+      } else {
+        return false;
+      }
+    };
+
+    let ballTrackHandling = () => {
+      let ballTrackCol = Math.floor(ballX / TRACK_W);
+      let ballTrackRow = Math.floor(ballY / TRACK_H);
+
+      if (
+        ballTrackCol >= 0 &&
+        ballTrackCol < TRACK_COLS &&
+        ballTrackRow >= 0 &&
+        ballTrackRow < TRACK_ROWS
+      ) {
+        if (isTrackAtColRow(ballTrackCol, ballTrackRow)) {
+          let prevBallX = ballX - ballVX;
+          let prevBallY = ballY - ballVY;
+          let prevTrackCol = Math.floor(prevBallX / TRACK_W);
+          let prevTrackRow = Math.floor(prevBallY / TRACK_H);
+
+          let bothTestsFailed = true;
+
+          if (prevTrackCol != ballTrackCol) {
+            if (isTrackAtColRow(prevTrackCol, ballTrackRow) == false) {
+              ballVX *= -1;
+              bothTestsFailed = false;
+            }
+          }
+          if (prevTrackRow != ballTrackRow) {
+            if (isTrackAtColRow(ballTrackCol, prevTrackRow) == false) {
+              ballVY *= -1;
+              bothTestsFailed = false;
+            }
+          }
+
+          if (bothTestsFailed) {
+            ballVX *= -1;
+            ballVY *= -1;
+          }
+        } //end of track found
+      } // end of valid col and row
+    }; // end of ballBRickHandling func
+
+    let moveAll = () => {
+      // ballMove();
+
+      ballTrackHandling();
+    };
+
+    let rowColToArrayIndex = (col, row) => {
+      return col + TRACK_COLS * row;
+    };
+
+    let drawTracks = () => {
+      for (let row = 0; row < TRACK_ROWS; row++) {
+        for (let col = 0; col < TRACK_COLS; col++) {
+          let arrayIndex = rowColToArrayIndex(col, row);
+
+          if (trackGrid[arrayIndex] == 1) {
+            colorRect(
+              TRACK_W * col,
+              TRACK_H * row,
+              TRACK_W - TRACK_GAP,
+              TRACK_H - TRACK_GAP,
+              "blue"
+            );
+          } // end of track test
+        } // end of for loop
+      }
+    }; // end of func
+
+    let drawAll = () => {
+      colorRect(0, 0, canvas.width, canvas.height, "black"); //clear screen
+
+      colorCircle(ballX, ballY, 10, "white"); //draw ball
+
+      drawTracks();
+    };
+
+    let colorRect = (topLeftX, topLeftY, boxWidth, boxHeight, fillColor) => {
+      canvasContext.fillStyle = fillColor;
+      canvasContext.fillRect(topLeftX, topLeftY, boxWidth, boxHeight);
+    };
+
+    let colorCircle = (centerX, centerY, radius, fillColor) => {
+      canvasContext.fillStyle = fillColor;
+      canvasContext.beginPath();
+      canvasContext.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+      canvasContext.fill();
+    };
+
+    let colorText = (words, textX, textY, fillColor) => {
+      canvasContext.fillStyle = fillColor;
+      canvasContext.fillText(words, textX, textY);
+    };
+  </script>
+</html>
