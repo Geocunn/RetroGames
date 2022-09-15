@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta content="text/html;charset=utf-8" http-equiv="Content-Type" />
+    <meta content="utf-8" http-equiv="'encoding" />
+  </head>
+
+  <body>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+  </body>
+  <script>
+    let ballX = 75;
+    let ballY = 75;
+    let ballVX = 5;
+    let ballVY = 7;
+
+    const BRICK_W = 80;
+    const BRICK_H = 40;
+    const BRICK_GAP = 2;
+    const BRICK_COLS = 10;
+    const BRICK_ROWS = 7;
+    let brickGrid = new Array(BRICK_COLS * BRICK_ROWS);
+
+    const BALL_RADIUS = 10;
+    const PADDLE_WIDTH = 100;
+    const PADDLE_THICKNESS = 10;
+    const PADDLE_EDGE_DIST = 60;
+    let paddleX = 400;
+
+    let canvas, canvasContext;
+
+    let mouseX = 0;
+    let mouseY = 0;
+
+    let updateMousePos = (evt) => {
+      let rect = canvas.getBoundingClientRect();
+      let root = document.documentElement;
+
+      mouseX = evt.clientX - rect.left - root.scrollLeft;
+      mouseY = evt.clientY - rect.top - root.scrollTop;
+
+      paddleX = mouseX - PADDLE_WIDTH / 2;
+
+      ballX = mouseX;
+      ballY = mouseY;
+      ballVX = 4;
+      ballVY = -4;
+    };
+
+    let brickReset = () => {
+      for (let i = 0; i < BRICK_COLS * BRICK_ROWS; i++) {
+        brickGrid[i] = true;
+      } // end of for loop
+    }; // end of brick reset func
+
+    window.onload = () => {
+      canvas = document.getElementById("gameCanvas");
+      canvasContext = canvas.getContext("2d");
+
+      let fps = 30;
+      setInterval(updateAll, 1000 / fps);
+
+      canvas.addEventListener("mousemove", updateMousePos);
+
+      brickReset();
+    };
+
+    let updateAll = () => {
+      moveAll();
+      drawAll();
+    };
+
+    let ballReset = () => {
+      ballX = canvas.height / 2;
+      ballY = canvas.height / 2;
+    };
+
+    let ballMove = () => {
+      ballX += ballVX;
+      ballY += ballVY;
+      if (ballX < 0) {
+        //left
+        ballVX = -ballVX;
+      }
+      if (ballX > canvas.width) {
+        //right
+        ballVX = -ballVX;
+      }
+      if (ballY < 0) {
+        //top
+        ballVY = -ballVY;
+      }
+      if (ballY > canvas.height) {
+        //bottom
+        // ballVY = -ballVY;
+        ballReset();
+      }
+    };
+
+    let ballBrickHandling = () => {
+      let ballBrickCol = Math.floor(ballX / BRICK_W);
+      let ballBrickRow = Math.floor(ballY / BRICK_H);
+
+      let brickIndexUnderball = rowColToArrayIndex(ballBrickCol, ballBrickRow);
+      if (
+        ballBrickCol >= 0 &&
+        ballBrickCol < BRICK_COLS &&
+        ballBrickRow >= 0 &&
+        ballBrickRow < BRICK_ROWS
+      ) {
+        if (brickGrid[brickIndexUnderball]) {
+          brickGrid[brickIndexUnderball] = false;
+
+          let prevBallX = ballX - ballVX;
+          let prevBallY = ballY - ballVY;
+          let prevBrickCol = Math.floor(prevBallX / BRICK_W);
+          let prevBrickRow = Math.floor(prevBallY / BRICK_H);
+
+          let bothTestsFailed = true;
+          if (prevBrickCol != ballBrickCol) {
+            let adjBrickSide = rowColToArrayIndex(prevBrickCol, ballBrickRow);
+
+            if (brickGrid[adjBrickSide] == false) {
+              ballVX *= -1;
+              bothTestsFailed = false;
+            }
+          }
+          if (prevBrickRow != ballBrickRow) {
+            let adjBrickTop = rowColToArrayIndex(ballBrickCol, prevBrickRow);
+            if (brickGrid[adjBrickTop] == false) {
+              ballVY *= -1;
+              bothTestsFailed = false;
+            }
+          }
+
+          if (bothTestsFailed) {
+            ballVX *= -1;
+            ballvY *= -1;
+          }
+        } //end of brick found
+      } // end of valid col and row
+    }; // end of ballBRickHandling func
+
+    let ballPaddleHandling = () => {
+      let paddleTopY = canvas.height - PADDLE_EDGE_DIST;
+      let paddleBottomY = paddleTopY + PADDLE_THICKNESS;
+      let paddleLeftX = paddleX;
+      let paddleRightX = paddleX + PADDLE_WIDTH;
+
+      if (
+        ballY > paddleTopY - BALL_RADIUS && // below top of paddle
+        ballY < paddleBottomY && // above bottom of paddle
+        ballX > paddleLeftX && // right of the left edge
+        ballX < paddleRightX // left of the right edge
+      ) {
+        ballVY = -ballVY;
+        let paddleCenterX = paddleX + PADDLE_WIDTH / 2;
+        let ballDistFromPaddleCenterX = ballX - paddleCenterX;
+        ballVX = ballDistFromPaddleCenterX * 0.35;
+      }
+    };
+
+    let moveAll = () => {
+      ballMove();
+
+      ballBrickHandling();
+
+      ballPaddleHandling();
+    };
+
+    let rowColToArrayIndex = (col, row) => {
+      return col + BRICK_COLS * row;
+    };
+
+    let drawBricks = () => {
+      for (let row = 0; row < BRICK_ROWS; row++) {
+        for (let col = 0; col < BRICK_COLS; col++) {
+          let arrayIndex = rowColToArrayIndex(col, row);
+
+          if (brickGrid[arrayIndex]) {
+            colorRect(
+              BRICK_W * col,
+              BRICK_H * row,
+              BRICK_W - BRICK_GAP,
+              BRICK_H - BRICK_GAP,
+              "blue"
+            );
+          } // end of brick test
+        } // end of for loop
+      }
+    }; // end of func
+
+    let drawAll = () => {
+      colorRect(0, 0, canvas.width, canvas.height, "black"); //clear screen
+
+      colorCircle(ballX, ballY, BALL_RADIUS, "white"); //draw ball
+
+      colorRect(
+        paddleX,
+        canvas.height - PADDLE_EDGE_DIST,
+        PADDLE_WIDTH,
+        PADDLE_THICKNESS,
+        "white"
+      );
+
+      drawBricks();
+    };
+
+    let colorRect = (topLeftX, topLeftY, boxWidth, boxHeight, fillColor) => {
+      canvasContext.fillStyle = fillColor;
+      canvasContext.fillRect(topLeftX, topLeftY, boxWidth, boxHeight);
+    };
+
+    let colorCircle = (centerX, centerY, radius, fillColor) => {
+      canvasContext.fillStyle = fillColor;
+      canvasContext.beginPath();
+      canvasContext.arc(centerX, centerY, radius, 0, Math.PI * 2, true);
+      canvasContext.fill();
+    };
+
+    let colorText = (words, textX, textY, fillColor) => {
+      canvasContext.fillStyle = fillColor;
+      canvasContext.fillText(words, textX, textY);
+    };
+  </script>
+</html>
