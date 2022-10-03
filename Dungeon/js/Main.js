@@ -1,7 +1,6 @@
 let canvas, canvasContext;
 
-let p1Car = new carClass();
-let p2Car = new carClass();
+let p1Warrior = new warriorClass();
 
 window.onload = () => {
   canvas = document.getElementById("gameCanvas");
@@ -22,9 +21,8 @@ let imageLoadingDone = () => {
 };
 
 let loadLevel = (whichlevel) => {
-  trackGrid = whichlevel.slice();
-  p1Car.reset(carPic, "Mclaren");
-  p2Car.reset(carPic2, "Redbull");
+  worldGrid = whichlevel.slice();
+  p1Warrior.reset(warriorPic, "Warrior");
 };
 
 let updateAll = () => {
@@ -33,12 +31,10 @@ let updateAll = () => {
 };
 
 let moveAll = () => {
-  p1Car.move();
-  p2Car.move();
+  p1Warrior.move();
 };
 
 let drawAll = () => {
-  drawTracks();
-  p1Car.draw();
-  p2Car.draw();
+  drawWorld();
+  p1Warrior.draw();
 };

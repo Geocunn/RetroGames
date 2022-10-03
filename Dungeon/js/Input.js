@@ -2,6 +2,7 @@ const KEY_LEFT_ARROW = 37;
 const KEY_UP_ARROW = 38;
 const KEY_RIGHT_ARROW = 39;
 const KEY_DOWN_ARROW = 40;
+
 const KEY_W = 87;
 const KEY_A = 65;
 const KEY_S = 83;
@@ -15,13 +16,12 @@ let setupInput = () => {
 
   document.addEventListener("keydown", keyPressed);
   document.addEventListener("keyup", keyReleased);
-  p1Car.setupInput(
+  p1Warrior.setupInput(
     KEY_UP_ARROW,
     KEY_RIGHT_ARROW,
     KEY_DOWN_ARROW,
     KEY_LEFT_ARROW
   );
-  p2Car.setupInput(KEY_W, KEY_D, KEY_S, KEY_A);
 };
 
 let updateMousePos = (evt) => {
@@ -32,27 +32,27 @@ let updateMousePos = (evt) => {
   mouseY = evt.clientY - rect.top - root.scrollTop;
 };
 
-let keySet = (keyEvent, car, setTo) => {
-  if (keyEvent.keyCode == car.controlLeft) {
-    car.keyHeld_Left = setTo;
+let keySet = (keyEvent, setTo) => {
+  if (keyEvent.keyCode == p1Warrior.controlKeyLeft) {
+    p1Warrior.keyHeld_West = setTo;
   }
-  if (keyEvent.keyCode == car.controlRight) {
-    car.keyHeld_Right = setTo;
+  if (keyEvent.keyCode == p1Warrior.controlKeyRight) {
+    p1Warrior.keyHeld_East = setTo;
   }
-  if (keyEvent.keyCode == car.controlUp) {
-    car.keyHeld_Gas = setTo;
+  if (keyEvent.keyCode == p1Warrior.controlKeyUp) {
+    p1Warrior.keyHeld_North = setTo;
   }
-  if (keyEvent.keyCode == car.controlDown) {
-    car.keyHeld_Reverse = setTo;
+  if (keyEvent.keyCode == p1Warrior.controlKeyDown) {
+    p1Warrior.keyHeld_South = setTo;
   }
 };
 
 let keyPressed = (evt) => {
-  keySet(evt, p1Car, true);
-  keySet(evt, p2Car, true);
+  keySet(evt, true);
+
+  evt.preventDefault();
 };
 
 let keyReleased = (evt) => {
-  keySet(evt, p1Car, false);
-  keySet(evt, p2Car, false);
+  keySet(evt, false);
 };
